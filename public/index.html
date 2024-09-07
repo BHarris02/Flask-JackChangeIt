@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jack Change It</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .card {
+            display: inline-block;
+            border: 1px solid #000;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 5px;
+            width: 50px;
+            height: 70px;
+            text-align: center;
+            line-height: 50px;
+            font-size: 20px;
+        }
+        #joinSection {
+            display: block;
+        }
+        #gameSection {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Jack Change It</h1>
+    <div id="joinSection">
+        <input type="text" id="name" placeholder="Enter your name" />
+        <button onclick="joinGame()">Join Game</button>
+    </div>
+    <div id="gameSection">
+        <div id="game"></div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        const renderGame = (gameState) => {
+            const gameDiv = document.getElementById('game');
+            gameDiv.innerHTML = '';
+
+            const currentPlayer = gameState.players.find((p) => p.id === socket.id);
+            if (!currentPlayer) return;
+
+            const handDiv = document.createElement('div');
+            handDiv.innerHTML = `<h2>Your Hand</h2>`;
+            currentPlayer.hand.forEach((card, index) => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'card';
+                cardDiv.innerText = `${card.value} of ${card.suit}`;
+                cardDiv.onclick = () => socket.emit('playCard', index);
+                handDiv.appendChild(cardDiv);
+            });
+
+            const currentCardDiv = document.createElement('div');
+            currentCardDiv.innerHTML = `<h2>Current Card</h2>`;
+            if (gameState.currentCard) {
+                currentCardDiv.className = 'card';
+                currentCardDiv.innerText = `${gameState.currentCard.value} of ${gameState.currentCard.suit}`;
+            } else {
+                currentCardDiv.innerText = 'No card available';
+            }
+
+            gameDiv.appendChild(handDiv);
+            gameDiv.appendChild(currentCardDiv);
+        };
+
+        socket.on('gameState', (gameState) => {
+            document.getElementById('joinSection').style.display = 'none';
+            document.getElementById('gameSection').style.display = 'block';
+            renderGame(gameState);
+        });
+
+        const joinGame = () => {
+            const name = document.getElementById('name').value;
+            if (name) {
+                socket.emit('joinGame', name);
+            }
+        };
+    </script>
+</body>
+</html>
